@@ -36,15 +36,18 @@ exports.getTicket = catchAsync(async (req, res, next) => {
 });
 
 exports.updateTicket = catchAsync(async (req, res, next) => {
+  // Admins only
+  if (req.user.role !== 'admin')
+    return next(
+      new AppError('You do not have permission to update this ticket', 403),
+    );
+
   const ticket = await Ticket.findById(req.params.id);
 
   if (!ticket) return next(new AppError('No ticket found with that ID', 404));
 
-  if (req.user.role !== 'admin' && ticket.user.toString() !== req.user.id)
-    return next(new AppError('You do not have permission to update this ticket', 403));
-
-  // Only allow certain fields to be updated
-  const allowed = ['title', 'description', 'category', 'priority', 'status'];
+  // Only allow priority and status to be updated by admin
+  const allowed = ['priority', 'status'];
   allowed.forEach((field) => {
     if (req.body[field] !== undefined) ticket[field] = req.body[field];
   });
@@ -55,12 +58,15 @@ exports.updateTicket = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteTicket = catchAsync(async (req, res, next) => {
+  // Admins only
+  if (req.user.role !== 'admin')
+    return next(
+      new AppError('You do not have permission to delete this ticket', 403),
+    );
+
   const ticket = await Ticket.findById(req.params.id);
 
   if (!ticket) return next(new AppError('No ticket found with that ID', 404));
-
-  if (req.user.role !== 'admin' && ticket.user.toString() !== req.user.id)
-    return next(new AppError('You do not have permission to delete this ticket', 403));
 
   await Ticket.findByIdAndDelete(req.params.id);
 
