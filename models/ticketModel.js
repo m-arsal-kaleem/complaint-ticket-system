@@ -57,6 +57,34 @@ const ticketSchema = new mongoose.Schema(
         },
       },
     ],
+    priorityHistory: [
+      {
+        from: {
+          type: String,
+          enum: ['low', 'medium', 'high'],
+          default: null,
+        },
+        to: {
+          type: String,
+          enum: ['low', 'medium', 'high'],
+          required: true,
+        },
+        reason: String,
+        changedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        changedByType: {
+          type: String,
+          enum: ['auto', 'admin', 'user'],
+          default: 'auto',
+        },
+        at: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

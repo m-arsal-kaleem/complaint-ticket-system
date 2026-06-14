@@ -21,6 +21,13 @@ router
   .patch(ticketController.updateTicket)
   .delete(ticketController.deleteTicket);
 
+// Admin override priority
+router.patch(
+  '/:id/priority',
+  authController.restrictTo('admin'),
+  ticketController.overridePriority,
+);
+
 // Upload attachment to ticket
 router.post(
   '/:id/attachments',

@@ -20,6 +20,25 @@ exports.createTicket = catchAsync(async (req, res, next) => {
 
   const ticket = await Ticket.create(req.body);
 
+  // Record initial priority history entry
+  try {
+    const initialEntry = {
+      from: null,
+      to: ticket.priority,
+      reason: detectionDetails ? 'auto-detected' : 'created',
+      changedBy: detectionDetails ? undefined : req.user.id,
+      changedByType: detectionDetails ? 'auto' : 'user',
+      at: Date.now(),
+    };
+    ticket.priorityHistory = ticket.priorityHistory || [];
+    ticket.priorityHistory.push(initialEntry);
+    await ticket.save();
+  } catch (err) {
+    // don't fail request if history push fails
+    // eslint-disable-next-line no-console
+    console.warn('Failed to record priority history', err.message || err);
+  }
+
   const responseBody = { ticket };
   if (detectionDetails) responseBody.priorityDetection = detectionDetails;
 
@@ -40,6 +59,18 @@ exports.reEvaluatePriority = catchAsync(async (req, res, next) => {
   const newPriority = detailed.priority || 'medium';
 
   ticket.priority = newPriority;
+  // add history entry if priority changed
+  if (oldPriority !== newPriority) {
+    ticket.priorityHistory = ticket.priorityHistory || [];
+    ticket.priorityHistory.push({
+      from: oldPriority,
+      to: newPriority,
+      reason: 're-evaluated',
+      changedByType: 'auto',
+      at: Date.now(),
+    });
+  }
+
   await ticket.save();
 
   res.status(200).json({
@@ -49,6 +80,52 @@ exports.reEvaluatePriority = catchAsync(async (req, res, next) => {
       priorityChange: { from: oldPriority, to: newPriority, details: detailed },
     },
   });
+});
+
+exports.overridePriority = catchAsync(async (req, res, next) => {
+  // Admins only
+  if (req.user.role !== 'admin')
+    return next(
+      new AppError('You do not have permission to override priority', 403),
+    );
+
+  const ticket = await Ticket.findById(req.params.id);
+  if (!ticket) return next(new AppError('No ticket found with that ID', 404));
+
+  const { priority, reason } = req.body;
+  if (!priority || !['low', 'medium', 'high'].includes(priority)) {
+    return next(new AppError('Invalid or missing priority', 400));
+  }
+
+  const oldPriority = ticket.priority;
+  if (oldPriority === priority) {
+    return res
+      .status(200)
+      .json({
+        status: 'success',
+        data: { ticket, message: 'Priority unchanged' },
+      });
+  }
+
+  ticket.priority = priority;
+  ticket.priorityHistory = ticket.priorityHistory || [];
+  ticket.priorityHistory.push({
+    from: oldPriority,
+    to: priority,
+    reason: reason || 'admin override',
+    changedBy: req.user.id,
+    changedByType: 'admin',
+    at: Date.now(),
+  });
+
+  await ticket.save();
+
+  res
+    .status(200)
+    .json({
+      status: 'success',
+      data: { ticket, priorityChange: { from: oldPriority, to: priority } },
+    });
 });
 
 exports.getAllTickets = catchAsync(async (req, res, next) => {
@@ -88,9 +165,30 @@ exports.updateTicket = catchAsync(async (req, res, next) => {
 
   // Only allow priority and status to be updated by admin
   const allowed = ['priority', 'status'];
+
+  let priorityChanged = false;
+  let oldPriority = ticket.priority;
   allowed.forEach((field) => {
-    if (req.body[field] !== undefined) ticket[field] = req.body[field];
+    if (req.body[field] !== undefined) {
+      if (field === 'priority' && req.body[field] !== ticket.priority) {
+        priorityChanged = true;
+        oldPriority = ticket.priority;
+      }
+      ticket[field] = req.body[field];
+    }
   });
+
+  if (priorityChanged) {
+    ticket.priorityHistory = ticket.priorityHistory || [];
+    ticket.priorityHistory.push({
+      from: oldPriority,
+      to: ticket.priority,
+      reason: req.body.reason || 'admin update',
+      changedBy: req.user.id,
+      changedByType: 'admin',
+      at: Date.now(),
+    });
+  }
 
   await ticket.save();
 
