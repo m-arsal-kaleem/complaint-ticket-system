@@ -1,14 +1,54 @@
 const Ticket = require('../models/ticketModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const {
+  detectPriority,
+  detectPriorityDetailed,
+} = require('../utils/priorityDetector');
 
 exports.createTicket = catchAsync(async (req, res, next) => {
   // Attach current user as owner
   req.body.user = req.user.id;
 
+  // Auto-detect priority when not provided
+  let detectionDetails = null;
+  if (!req.body.priority) {
+    const text = `${req.body.title || ''} ${req.body.description || ''}`;
+    detectionDetails = detectPriorityDetailed(text);
+    req.body.priority = detectionDetails.priority || 'medium';
+  }
+
   const ticket = await Ticket.create(req.body);
 
-  res.status(201).json({ status: 'success', data: { ticket } });
+  const responseBody = { ticket };
+  if (detectionDetails) responseBody.priorityDetection = detectionDetails;
+
+  res.status(201).json({ status: 'success', data: responseBody });
+});
+
+exports.reEvaluatePriority = catchAsync(async (req, res, next) => {
+  const ticket = await Ticket.findById(req.params.id);
+
+  if (!ticket) return next(new AppError('No ticket found with that ID', 404));
+
+  if (req.user.role !== 'admin' && ticket.user.toString() !== req.user.id)
+    return next(new AppError('You do not have access to this ticket', 403));
+
+  const text = `${ticket.title || ''} ${ticket.description || ''}`;
+  const detailed = detectPriorityDetailed(text);
+  const oldPriority = ticket.priority;
+  const newPriority = detailed.priority || 'medium';
+
+  ticket.priority = newPriority;
+  await ticket.save();
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      ticket,
+      priorityChange: { from: oldPriority, to: newPriority, details: detailed },
+    },
+  });
 });
 
 exports.getAllTickets = catchAsync(async (req, res, next) => {

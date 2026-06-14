@@ -34,6 +34,9 @@ router
   .get(ticketController.getAdminReplies)
   .post(ticketController.addAdminReply);
 
+// Re-evaluate priority for a ticket (owner or admin)
+router.post('/:id/re-evaluate-priority', ticketController.reEvaluatePriority);
+
 // Nested comment routes
 router.use('/:ticketId/comments', commentRouter);
 
