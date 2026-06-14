@@ -3,6 +3,7 @@ const ticketController = require('../controllers/ticketController');
 const authController = require('../controllers/authController');
 const upload = require('../utils/multerConfig');
 const { processTicketAttachment } = require('../utils/imageProcessor');
+const commentRouter = require('./commentRoutes');
 
 const router = express.Router();
 
@@ -27,5 +28,8 @@ router.post(
   processTicketAttachment,
   ticketController.uploadAttachment,
 );
+
+// Nested comment routes
+router.use('/:ticketId/comments', commentRouter);
 
 module.exports = router;
