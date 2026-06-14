@@ -1,0 +1,40 @@
+{
+  "high": [
+    "urgent",
+    "critical",
+    "payment",
+    "charged",
+    "declined",
+    "blocked",
+    "down",
+    "outage",
+    "security",
+    "breach",
+    "error",
+    "failed",
+    "crash",
+    "data loss",
+    "unavailable"
+  ],
+  "medium": [
+    "bug",
+    "issue",
+    "problem",
+    "slow",
+    "performance",
+    "inconsistent",
+    "timeout",
+    "database",
+    "backend"
+  ],
+  "low": [
+    "feature",
+    "request",
+    "suggestion",
+    "enhancement",
+    "cosmetic",
+    "ui",
+    "typo",
+    "question"
+  ]
+}
