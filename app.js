@@ -34,6 +34,9 @@ app.use(mongoSanitize());
 app.use(hpp());
 app.use(cors());
 
+// Serve static files from public folder
+app.use(express.static(`${__dirname}/public`));
+
 // Routes
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/tickets', ticketRouter);

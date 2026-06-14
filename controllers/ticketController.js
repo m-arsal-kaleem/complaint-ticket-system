@@ -72,3 +72,33 @@ exports.deleteTicket = catchAsync(async (req, res, next) => {
 
   res.status(204).json({ status: 'success', data: null });
 });
+
+exports.uploadAttachment = catchAsync(async (req, res, next) => {
+  // User must own the ticket or be admin
+  const ticket = await Ticket.findById(req.params.id);
+
+  if (!ticket) return next(new AppError('No ticket found with that ID', 404));
+
+  if (req.user.role !== 'admin' && ticket.user.toString() !== req.user.id)
+    return next(
+      new AppError('You do not have permission to upload to this ticket', 403),
+    );
+
+  // If file was uploaded and processed
+  if (req.file && req.file.filename) {
+    ticket.attachments.push({
+      filename: req.file.filename,
+      uploadedAt: new Date(),
+    });
+
+    await ticket.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Attachment uploaded successfully',
+      data: { ticket },
+    });
+  }
+
+  return next(new AppError('No file uploaded', 400));
+});

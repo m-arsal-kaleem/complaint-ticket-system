@@ -31,6 +31,15 @@ const ticketSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'A ticket must belong to a user'],
     },
+    attachments: [
+      {
+        filename: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

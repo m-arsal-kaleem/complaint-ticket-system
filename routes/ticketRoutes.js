@@ -1,6 +1,8 @@
 const express = require('express');
 const ticketController = require('../controllers/ticketController');
 const authController = require('../controllers/authController');
+const upload = require('../utils/multerConfig');
+const { processTicketAttachment } = require('../utils/imageProcessor');
 
 const router = express.Router();
 
@@ -17,5 +19,13 @@ router
   .get(ticketController.getTicket)
   .patch(ticketController.updateTicket)
   .delete(ticketController.deleteTicket);
+
+// Upload attachment to ticket
+router.post(
+  '/:id/attachments',
+  upload.single('attachment'),
+  processTicketAttachment,
+  ticketController.uploadAttachment,
+);
 
 module.exports = router;
