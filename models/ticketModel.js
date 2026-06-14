@@ -40,6 +40,23 @@ const ticketSchema = new mongoose.Schema(
         },
       },
     ],
+    adminReplies: [
+      {
+        text: {
+          type: String,
+          required: true,
+        },
+        admin: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        repliedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

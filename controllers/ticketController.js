@@ -102,3 +102,62 @@ exports.uploadAttachment = catchAsync(async (req, res, next) => {
 
   return next(new AppError('No file uploaded', 400));
 });
+
+exports.addAdminReply = catchAsync(async (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return next(
+      new AppError('You do not have permission to reply to this ticket', 403),
+    );
+  }
+
+  const ticket = await Ticket.findById(req.params.id);
+
+  if (!ticket) return next(new AppError('No ticket found with that ID', 404));
+
+  if (!req.body.text) {
+    return next(new AppError('Reply text is required', 400));
+  }
+
+  ticket.adminReplies.push({
+    text: req.body.text,
+    admin: req.user.id,
+    repliedAt: Date.now(),
+  });
+
+  if (ticket.status === 'open') {
+    ticket.status = 'in-progress';
+  }
+
+  await ticket.save();
+
+  await ticket.populate('adminReplies.admin', 'name email photo');
+
+  res.status(201).json({
+    status: 'success',
+    data: { ticket },
+  });
+});
+
+exports.getAdminReplies = catchAsync(async (req, res, next) => {
+  const ticket = await Ticket.findById(req.params.id).populate(
+    'adminReplies.admin',
+    'name email photo',
+  );
+
+  if (!ticket) return next(new AppError('No ticket found with that ID', 404));
+
+  if (req.user.role !== 'admin' && ticket.user.toString() !== req.user.id) {
+    return next(
+      new AppError(
+        'You do not have permission to view replies on this ticket',
+        403,
+      ),
+    );
+  }
+
+  res.status(200).json({
+    status: 'success',
+    results: ticket.adminReplies.length,
+    data: { replies: ticket.adminReplies },
+  });
+});

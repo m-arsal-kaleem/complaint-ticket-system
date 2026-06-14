@@ -29,6 +29,11 @@ router.post(
   ticketController.uploadAttachment,
 );
 
+router
+  .route('/:id/replies')
+  .get(ticketController.getAdminReplies)
+  .post(ticketController.addAdminReply);
+
 // Nested comment routes
 router.use('/:ticketId/comments', commentRouter);
 
