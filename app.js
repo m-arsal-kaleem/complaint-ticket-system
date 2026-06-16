@@ -9,6 +9,7 @@ const cors = require('cors');
 
 const userRouter = require('./routes/userRoutes');
 const ticketRouter = require('./routes/ticketRoutes');
+const analyticsRouter = require('./routes/analyticsRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 
@@ -40,6 +41,7 @@ app.use(express.static(`${__dirname}/public`));
 // Routes
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/tickets', ticketRouter);
+app.use('/api/v1/analytics', analyticsRouter);
 
 // Handle undefined routes
 app.all('*', (req, res, next) => {
