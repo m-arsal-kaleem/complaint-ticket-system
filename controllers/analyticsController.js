@@ -32,10 +32,22 @@ exports.getAdminAnalytics = catchAsync(async (req, res, next) => {
         $group: {
           _id: null,
           withAttachments: {
-            $sum: { $cond: [{ $gt: [{ $size: '$attachments' }, 0] }, 1, 0] },
+            $sum: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$attachments', []] } }, 0] },
+                1,
+                0,
+              ],
+            },
           },
           withoutAttachments: {
-            $sum: { $cond: [{ $eq: [{ $size: '$attachments' }, 0] }, 1, 0] },
+            $sum: {
+              $cond: [
+                { $eq: [{ $size: { $ifNull: ['$attachments', []] } }, 0] },
+                1,
+                0,
+              ],
+            },
           },
         },
       },

@@ -85,6 +85,18 @@ const ticketSchema = new mongoose.Schema(
         },
       },
     ],
+    rating: {
+      type: Number,
+      min: [1, 'Rating must be at least 1'],
+      max: [5, 'Rating must be at most 5'],
+    },
+    feedback: {
+      type: String,
+      trim: true,
+    },
+    ratedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
