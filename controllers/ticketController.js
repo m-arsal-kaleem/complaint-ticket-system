@@ -3,6 +3,7 @@ const User = require('../models/userModel');
 const Ticket = require('../models/ticketModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const APIFeatures = require('../utils/apiFeatures');
 const {
   detectPriority,
   detectPriorityDetailed,
@@ -149,7 +150,14 @@ exports.getAllTickets = catchAsync(async (req, res, next) => {
   const filter = {};
   if (req.user.role !== 'admin') filter.user = req.user.id;
 
-  const tickets = await Ticket.find(filter).sort('-createdAt');
+  const features = new APIFeatures(Ticket.find(filter), req.query)
+    .filter()
+    .search()
+    .sort()
+    .limitFields()
+    .paginate();
+
+  const tickets = await features.query;
 
   res.status(200).json({
     status: 'success',
