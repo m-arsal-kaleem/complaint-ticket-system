@@ -372,3 +372,33 @@ exports.getAdminReplies = catchAsync(async (req, res, next) => {
     data: { replies: ticket.adminReplies },
   });
 });
+
+exports.submitFeedback = catchAsync(async (req, res, next) => {
+  const ticket = await Ticket.findById(req.params.id);
+
+  if (!ticket) return next(new AppError('No ticket found with that ID', 404));
+
+  if (ticket.user.toString() !== req.user.id)
+    return next(new AppError('You can only rate your own tickets', 403));
+
+  if (!['resolved', 'closed'].includes(ticket.status))
+    return next(
+      new AppError('You can only rate resolved or closed tickets', 400),
+    );
+
+  if (ticket.rating)
+    return next(
+      new AppError('You have already submitted feedback for this ticket', 400),
+    );
+
+  ticket.rating = req.body.rating;
+  ticket.feedback = req.body.feedback;
+  ticket.ratedAt = Date.now();
+
+  await ticket.save();
+
+  res.status(200).json({
+    status: 'success',
+    data: { ticket },
+  });
+});

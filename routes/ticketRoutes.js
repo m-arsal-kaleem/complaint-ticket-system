@@ -28,6 +28,8 @@ router.patch(
   ticketController.overridePriority,
 );
 
+router.patch('/:id/feedback', ticketController.submitFeedback);
+
 // Upload attachment to ticket
 router.post(
   '/:id/attachments',
